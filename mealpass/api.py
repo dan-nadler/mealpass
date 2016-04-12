@@ -37,6 +37,6 @@ def login( username, password ):
     return  resp
 
 if __name__ == '__main__':
-    re = login('dnadler87@gmail.com', _ )
+    re = login( _, _ )
     print re.url
     print re.text
