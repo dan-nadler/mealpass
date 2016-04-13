@@ -38,13 +38,11 @@ class mealpass(object):
         self.login_resp = json.loads(resp.text)
         del self.payload['username']
         del self.payload['password']
-        self.payload['sessionToken'] = self.login_resp[u'sessionToken']
+        del self.payload['_method']
+        self.payload['sessionToken'] = str(self.login_resp[u'sessionToken'])
         return json.loads(resp.text)
 
     def search(self):
-
-        p = self.payload
-        del p['_method']
 
         p = {"search":
                 {
@@ -69,14 +67,64 @@ class mealpass(object):
                              data=json.dumps(p),
                              headers=self.headers)
 
-        return resp
+        self.search_resp = json.loads(resp.text)
+        return json.loads(resp.text)
+
+    def reserve(self, restaurant_name=u'Tossed'):
+
+        p = self.payload
+        p['pickupTime'] =  "12:00pm-12:15pm"
+
+        data = [
+            {
+                'meal': str(r['meal']['objectId']),
+                'restaurant': str(r['restaurant']['objectId']),
+                'city': str(r['restaurant']['city']['objectId']),
+                'schedule': str(r['objectId'])
+            }
+            for r in re['result'] if r['restaurant']['name'] == restaurant_name
+        ][0]
+
+        for k, v in data.iteritems():
+            p[k] = v
+
+        print json.dumps(p)
+
+        #TODO fix error from this request
+        resp = requests.post(self.PATH+'1/functions/reserveMeal',
+                             data=json.dumps(p),
+                             headers=self.headers)
+
+        print resp.text
+        self.reservation_resp = json.loads(resp.text)
+        self.reservation_id = self.reservation_resp['objectId']
+
+        return json.loads(resp.text)
+
+    def cancel(self):
+
+        p = self.payload
+        del p['_method']
+
+        p['reservation'] = self.reservation_idr
+        p['city'] = self.reservation_id['user']['city']['objectId']
+
+        resp = requests.post(self.PATH + '1/functions/cancelReservation',
+                             data=json.dumps(p),
+                             headers=self.headers)
+
+        return json.loads(resp.text)
 
 
 if __name__ == '__main__':
-    m = mealpass( 'username','mypassword')
+    m = mealpass( 'mylogin','mypassword')
     re = m.login()
-    print re['city'][u'objectId']
-    print m.payload
-
     re = m.search()
-    print re.text
+
+    print 'reserving tossed'
+    re = m.reserve(restaurant_name=u'Tossed')
+    print re
+
+    print 'cancelling tossed'
+    re = m.cancel()
+    print re
