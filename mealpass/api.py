@@ -1,5 +1,4 @@
 import requests
-import httplib, urllib
 import json
 
 class mealpass(object):
