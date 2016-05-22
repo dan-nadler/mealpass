@@ -1,5 +1,5 @@
-import requests
-import json
+from requests import post
+from json import loads, dumps
 
 class mealpass(object):
 
@@ -27,19 +27,20 @@ class mealpass(object):
             "Connection": "keep-alive",
         }
 
+        re = m.login()
 
     def login(self):
 
-        resp = requests.post(self.PATH+'1/login',
-                             data=json.dumps(self.payload),
+        resp = post(self.PATH+'1/login',
+                             data=dumps(self.payload),
                              headers=self.headers)
 
-        self.login_resp = json.loads(resp.text)
+        self.login_resp = loads(resp.text)
         del self.payload['username']
         del self.payload['password']
         del self.payload['_method']
         self.payload['sessionToken'] = str(self.login_resp[u'sessionToken'])
-        return json.loads(resp.text)
+        return loads(resp.text)
 
     def search(self):
 
@@ -62,62 +63,88 @@ class mealpass(object):
             "_SessionToken": self.payload['sessionToken']
         }
 
-        resp = requests.post(self.PATH+'1/functions/searchMeal',
-                             data=json.dumps(p),
+        resp = post(self.PATH+'1/functions/searchMeal',
+                             data=dumps(p),
                              headers=self.headers)
 
-        self.search_resp = json.loads(resp.text)
-        return json.loads(resp.text)
+        self.search_resp = loads(resp.text)
+        return loads(resp.text)
 
-    def reserve(self, restaurant_name=u'Tossed'):
+    def reserve(self, restaurant_name=None, meal_name=None):
+        """
+        Find and reserve a meal based on the restaurant or meal name.
+        :param restaurant_name: optional string, restaurant name
+        :param meal_name: optional string, meal name
+        :return:
+        """
+
+        if restaurant_name is None and meal_name is None:
+            print "You must specify a search parameter."
+            return
+
+        if restaurant_name is not None and meal_name is not None:
+            print "You may only specify one search parameter."
+            return
 
         p = self.payload
-        p['pickupTime'] =  "12:00pm-12:15pm"
+        p['pickupTime'] =  "12:00pm-12:15pm" #TODO specify list of allowable windows. Allow user to set window
 
-        data = [
-            {
-                'meal': str(r['meal']['objectId']),
-                'restaurant': str(r['restaurant']['objectId']),
-                'city': str(r['restaurant']['city']['objectId']),
-                'schedule': str(r['objectId'])
-            }
-            for r in re['result'] if r['restaurant']['name'] == restaurant_name
-        ][0]
+        def find_meal(field_name, search_param):
+            data = [
+                {
+                    'meal': str(r['meal']['objectId']),
+                    'restaurant': str(r['restaurant']['objectId']),
+                    'city': str(r['restaurant']['city']['objectId']),
+                    'schedule': str(r['objectId'])
+                }
+                for r
+                in re['result']
+                if r[field_name]['name'] == search_param
+                ][0]
+
+            return data
+
+        if restaurant_name is not None:
+            assert ((type(restaurant_name)) == str or (type(restaurant_name) == unicode))
+            data = find_meal('restaurant', restaurant_name)
+
+        if meal_name is not None:
+            assert((type(meal_name)) == str or (type(meal_name) == unicode))
+            data = find_meal('meal', meal_name)
 
         for k, v in data.iteritems():
             p[k] = v
 
-        print json.dumps(p)
+        print dumps(p)
 
         #TODO fix error from this request
-        resp = requests.post(self.PATH+'1/functions/reserveMeal',
-                             data=json.dumps(p),
+        resp = post(self.PATH+'1/functions/reserveMeal',
+                             data=dumps(p),
                              headers=self.headers)
 
         print resp.text
-        self.reservation_resp = json.loads(resp.text)
+        self.reservation_resp = loads(resp.text)
         self.reservation_id = self.reservation_resp['objectId']
 
-        return json.loads(resp.text)
+        return loads(resp.text)
 
     def cancel(self):
 
         p = self.payload
         del p['_method']
 
-        p['reservation'] = self.reservation_idr
+        p['reservation'] = self.reservation_id
         p['city'] = self.reservation_id['user']['city']['objectId']
 
-        resp = requests.post(self.PATH + '1/functions/cancelReservation',
-                             data=json.dumps(p),
+        resp = post(self.PATH + '1/functions/cancelReservation',
+                             data=dumps(p),
                              headers=self.headers)
 
-        return json.loads(resp.text)
+        return loads(resp.text)
 
 
 if __name__ == '__main__':
     m = mealpass( 'mylogin','mypassword')
-    re = m.login()
     re = m.search()
 
     print 'reserving tossed'
