@@ -1,1 +1,1 @@
-from mealpass import mealpass
+from api import mealpass

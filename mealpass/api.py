@@ -27,7 +27,7 @@ class mealpass(object):
             "Connection": "keep-alive",
         }
 
-        re = m.login()
+        re = self.login()
 
     def login(self):
 
@@ -89,6 +89,7 @@ class mealpass(object):
         p = self.payload
         p['pickupTime'] =  "12:00pm-12:15pm" #TODO specify list of allowable windows. Allow user to set window
 
+        re = self.search_resp
         def find_meal(field_name, search_param):
             data = [
                 {
@@ -115,10 +116,10 @@ class mealpass(object):
         for k, v in data.iteritems():
             p[k] = v
 
-        print dumps(p)
+        print 'payoad:\n', dumps(p), '\n\n'
 
         #TODO fix error from this request
-        resp = post(self.PATH+'1/functions/reserveMeal',
+        resp = post(self.PATH+'1/functions/reserveMeal2',
                              data=dumps(p),
                              headers=self.headers)
 
@@ -131,14 +132,20 @@ class mealpass(object):
     def cancel(self):
 
         p = self.payload
-        del p['_method']
+        try:
+            del p['_method']
+        except:
+            pass
 
-        p['reservation'] = self.reservation_id
-        p['city'] = self.reservation_id['user']['city']['objectId']
+        try:
+            p['reservation'] = self.reservation_id
+            p['city'] = self.reservation_id['user']['city']['objectId']
 
-        resp = post(self.PATH + '1/functions/cancelReservation',
-                             data=dumps(p),
-                             headers=self.headers)
+            resp = post(self.PATH + '1/functions/cancelReservation',
+                                 data=dumps(p),
+                                 headers=self.headers)
+        except Exception as e:
+            print 'ERROR: ' ,e.message
 
         return loads(resp.text)
 
