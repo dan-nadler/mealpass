@@ -42,13 +42,20 @@ class mealpass(object):
         self.payload['sessionToken'] = str(self.login_resp[u'sessionToken'])
         return loads(resp.text)
 
-    def search(self):
+    def search(self, city='boston'):
+
+        cities = {
+            'boston': 'N9H3AGq93v',
+            'miami': 'TnuNeRIB0W',
+            'new york': 'i1tAmFFKJg',
+            'san francisco': '31ezd7wci7'
+        }
 
         p = {"search":
                 {
                     "onlyFavorites": False,
                     "text": "",
-                    "cities": ["N9H3AGq93v", "N9H3AGq93v"],
+                    "cities": [cities[city], cities[city]],
                     "cuisines": ["american", "asian", "latin", "mediterranean", "italian"],
                     "portions": [1, 2, 3],
                     "neighborhoods": [],
